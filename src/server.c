@@ -18,10 +18,18 @@
 #include <string.h>
 #include <sys/types.h>
 
+#define SERVER_LISTEN_PORT 3000
+
+char read_buff[1024];
+
+int start_server();
+char* create_response();
+
 int start_server() {
   int listenfd = 0, connfd = 0;
+  int bytes_read = 0, bytes_written = 0;
   struct sockaddr_in serv_addr;
-  char send_buff[1024];
+  char* response;
 
   listenfd = socket(AF_INET, SOCK_STREAM, 0);
   memset(&serv_addr, '0', sizeof(serv_addr));
@@ -29,7 +37,7 @@ int start_server() {
 
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-  serv_addr.sin_port = htons(3000);
+  serv_addr.sin_port = htons(SERVER_LISTEN_PORT);
 
   bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
 
@@ -40,14 +48,21 @@ int start_server() {
   while(1) {
     connfd = accept(listenfd, (struct sockaddr*)NULL, NULL);
 
-    sprintf(send_buff, 
-      "HTTP/1.1 500 Internal Server Error\n"
-      "Connection: close\n"
-      "\r\n\r\n");
+    bytes_read = read(connfd, read_buff, 1024);
+    puts(read_buff);
 
-    write(connfd, send_buff, strlen(send_buff));
+    response = create_response();
+    write(connfd, response, strlen(response));
 
     close(connfd);
     sleep(1);
   }
+}
+
+char* create_response() {
+  return 
+    "HTTP/1.1 200 OK\n"
+    "Connection: close\n"
+    "\r\n\r\n"
+    "<html><body><h1>Hello Webbly!!</h1></body></html>";
 }
